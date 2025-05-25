@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import TreeVisualizer from '../components/TreeVisualizer';
-import { useNavigate } from 'react-router-dom';
 
 export default function ProjectEditor() {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const [tree, setTree] = useState(null);
+  const [projectName, setProjectName] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function ProjectEditor() {
 
       if (data) {
         setTree(data.tree_data);
+        setProjectName(data.name); // Load project title separately
       }
 
       setLoading(false);
@@ -71,9 +73,13 @@ export default function ProjectEditor() {
   useEffect(() => {
     const saveTree = async () => {
       if (!tree) return;
+
       await supabase
         .from('projects')
-        .update({ tree_data: tree, updated_at: new Date().toISOString() })
+        .update({
+          tree_data: tree,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id)
         .eq('user_id', user.id);
     };
@@ -82,21 +88,37 @@ export default function ProjectEditor() {
     return () => clearTimeout(delay);
   }, [tree, id, user]);
 
+  // 💾 Save project title separately
+  const saveProjectName = async () => {
+    await supabase
+      .from('projects')
+      .update({ name: projectName })
+      .eq('id', id)
+      .eq('user_id', user.id);
+  };
+
   if (loading) return <div className="p-6">Loading project...</div>;
   if (!tree) return <div className="p-6 text-red-600">Project not found.</div>;
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-  <h1 className="text-2xl font-bold">Editing: {tree.root.content}</h1>
-  <button
-    onClick={() => navigate('/dashboard')}
-    className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-  >
-    Return to Dashboard
-  </button>
-</div>
+        <input
+          type="text"
+          value={projectName}
+          onChange={(e) => setProjectName(e.target.value)}
+          onBlur={saveProjectName}
+          className="text-2xl font-bold border-b-2 border-gray-300 focus:border-blue-500 outline-none"
+          style={{ width: '100%', maxWidth: '400px' }}
+        />
 
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+        >
+          Return to Dashboard
+        </button>
+      </div>
 
       <TreeVisualizer tree={tree} updateNode={updateNode} addChild={addChild} />
     </div>
