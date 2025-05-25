@@ -86,14 +86,36 @@ export default function Dashboard() {
         <ul className="space-y-2">
           {projects.map(project => (
             <li key={project.id} className="flex justify-between items-center border p-4 rounded hover:bg-gray-100">
-              <span>{project.name}</span>
-              <button
-                onClick={() => navigate(`/project/${project.id}`)}
-                className="text-blue-600 hover:underline"
-              >
-                Open
-              </button>
-            </li>
+  <span className="font-medium">{project.name}</span>
+  <div className="flex gap-4">
+    <button
+      onClick={() => navigate(`/project/${project.id}`)}
+      className="text-blue-600 hover:underline"
+    >
+      Open
+    </button>
+    <button
+      onClick={async () => {
+        const confirmDelete = window.confirm(`Are you sure you want to delete "${project.name}"?`);
+        if (!confirmDelete) return;
+
+        const { error } = await supabase
+          .from('projects')
+          .delete()
+          .eq('id', project.id)
+          .eq('user_id', user.id);
+
+        if (!error) {
+          setProjects(projects.filter(p => p.id !== project.id));
+        }
+      }}
+      className="text-red-600 hover:underline"
+    >
+      Delete
+    </button>
+  </div>
+</li>
+
           ))}
         </ul>
       )}
