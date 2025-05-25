@@ -3,10 +3,12 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import TreeVisualizer from '../components/TreeVisualizer';
+import { useNavigate } from 'react-router-dom';
 
 export default function ProjectEditor() {
   const { id } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [tree, setTree] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -86,8 +88,15 @@ export default function ProjectEditor() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Editing: {tree.root.content}</h1>
-      </div>
+  <h1 className="text-2xl font-bold">Editing: {tree.root.content}</h1>
+  <button
+    onClick={() => navigate('/dashboard')}
+    className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+  >
+    Return to Dashboard
+  </button>
+</div>
+
 
       <TreeVisualizer tree={tree} updateNode={updateNode} addChild={addChild} />
     </div>
