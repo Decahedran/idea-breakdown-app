@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import App from './App';
 import Dashboard from './pages/Dashboard';
+import ProjectEditor from './pages/ProjectEditor'; // ✅ NEW IMPORT
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <AuthProvider>
@@ -11,6 +12,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/project/:id" element={<ProjectEditor />} /> {/* ✅ NEW ROUTE */}
       </Routes>
     </BrowserRouter>
   </AuthProvider>
