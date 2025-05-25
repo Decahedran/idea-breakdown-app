@@ -24,7 +24,7 @@ export default function ProjectEditor() {
 
       if (data) {
         setTree(data.tree_data);
-        setProjectName(data.name); // Load project title separately
+        setProjectName(data.name);
       }
 
       setLoading(false);
@@ -69,7 +69,6 @@ export default function ProjectEditor() {
     });
   };
 
-  // 💾 Save to Supabase when tree updates
   useEffect(() => {
     const saveTree = async () => {
       if (!tree) return;
@@ -84,11 +83,10 @@ export default function ProjectEditor() {
         .eq('user_id', user.id);
     };
 
-    const delay = setTimeout(saveTree, 800); // debounce save
+    const delay = setTimeout(saveTree, 800);
     return () => clearTimeout(delay);
   }, [tree, id, user]);
 
-  // 💾 Save project title separately
   const saveProjectName = async () => {
     await supabase
       .from('projects')
@@ -102,7 +100,7 @@ export default function ProjectEditor() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
         <input
           type="text"
           value={projectName}
@@ -112,12 +110,28 @@ export default function ProjectEditor() {
           style={{ width: '100%', maxWidth: '400px' }}
         />
 
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-        >
-          Return to Dashboard
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+          >
+            Return to Dashboard
+          </button>
+
+          <button
+            onClick={() => {
+              const blob = new Blob([JSON.stringify(tree, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `${projectName.replace(/\s+/g, '_') || 'project'}.json`;
+              link.click();
+            }}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            Export as JSON
+          </button>
+        </div>
       </div>
 
       <TreeVisualizer tree={tree} updateNode={updateNode} addChild={addChild} />
