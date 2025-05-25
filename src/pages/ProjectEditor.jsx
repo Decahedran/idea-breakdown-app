@@ -3,11 +3,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import TreeVisualizer from '../components/TreeVisualizer';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { useRef } from 'react';
+
 
 export default function ProjectEditor() {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const exportRef = useRef(null);
 
   const [tree, setTree] = useState(null);
   const [projectName, setProjectName] = useState('');
@@ -119,6 +124,25 @@ export default function ProjectEditor() {
           </button>
 
           <button
+  onClick={async () => {
+    if (!exportRef.current) return;
+
+    const canvas = await html2canvas(exportRef.current);
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`${projectName.replace(/\s+/g, '_') || 'project'}.pdf`);
+  }}
+  className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+>
+  Export as PDF
+</button>
+
+          <button
             onClick={() => {
               const blob = new Blob([JSON.stringify(tree, null, 2)], { type: 'application/json' });
               const url = URL.createObjectURL(blob);
@@ -134,7 +158,9 @@ export default function ProjectEditor() {
         </div>
       </div>
 
-      <TreeVisualizer tree={tree} updateNode={updateNode} addChild={addChild} />
+      <div ref={exportRef} className="bg-white p-4 rounded shadow-sm">
+  <TreeVisualizer tree={tree} updateNode={updateNode} addChild={addChild} />
+</div>
     </div>
   );
 }
