@@ -1,12 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import TreeVisualizer from '../components/TreeVisualizer';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { useRef } from 'react';
-
 
 export default function ProjectEditor() {
   const { id } = useParams();
@@ -20,7 +18,7 @@ export default function ProjectEditor() {
 
   useEffect(() => {
     const fetchProject = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('projects')
         .select('*')
         .eq('id', id)
@@ -41,13 +39,11 @@ export default function ProjectEditor() {
   const updateNode = (nodeId, content) => {
     setTree(prev => {
       const updated = { ...prev };
-
       if (nodeId === updated.root.id) {
         updated.root.content = content;
       } else if (updated.nodes[nodeId]) {
         updated.nodes[nodeId].content = content;
       }
-
       return updated;
     });
   };
@@ -69,7 +65,6 @@ export default function ProjectEditor() {
 
       parent.children.push(newId);
       updated.nodes[newId] = newNode;
-
       return updated;
     });
   };
@@ -77,7 +72,6 @@ export default function ProjectEditor() {
   useEffect(() => {
     const saveTree = async () => {
       if (!tree) return;
-
       await supabase
         .from('projects')
         .update({
@@ -104,63 +98,67 @@ export default function ProjectEditor() {
   if (!tree) return <div className="p-6 text-red-600">Project not found.</div>;
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-        <input
-          type="text"
-          value={projectName}
-          onChange={(e) => setProjectName(e.target.value)}
-          onBlur={saveProjectName}
-          className="text-2xl font-bold border-b-2 border-gray-300 focus:border-blue-500 outline-none"
-          style={{ width: '100%', maxWidth: '400px' }}
-        />
+    <div className="flex flex-col h-screen">
+      {/* Top toolbar */}
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+          <input
+            type="text"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            onBlur={saveProjectName}
+            className="text-2xl font-bold border-b-2 border-gray-300 focus:border-blue-500 outline-none"
+            style={{ width: '100%', maxWidth: '400px' }}
+          />
 
-        <div className="flex gap-2">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-          >
-            Return to Dashboard
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+            >
+              Return to Dashboard
+            </button>
 
-          <button
-  onClick={async () => {
-    if (!exportRef.current) return;
+            <button
+              onClick={async () => {
+                if (!exportRef.current) return;
+                const canvas = await html2canvas(exportRef.current);
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`${projectName.replace(/\s+/g, '_') || 'project'}.pdf`);
+              }}
+              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+            >
+              Export as PDF
+            </button>
 
-    const canvas = await html2canvas(exportRef.current);
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`${projectName.replace(/\s+/g, '_') || 'project'}.pdf`);
-  }}
-  className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
->
-  Export as PDF
-</button>
-
-          <button
-            onClick={() => {
-              const blob = new Blob([JSON.stringify(tree, null, 2)], { type: 'application/json' });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = `${projectName.replace(/\s+/g, '_') || 'project'}.json`;
-              link.click();
-            }}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          >
-            Export as JSON
-          </button>
+            <button
+              onClick={() => {
+                const blob = new Blob([JSON.stringify(tree, null, 2)], {
+                  type: 'application/json'
+                });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${projectName.replace(/\s+/g, '_') || 'project'}.json`;
+                link.click();
+              }}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            >
+              Export as JSON
+            </button>
+          </div>
         </div>
       </div>
 
-      <div ref={exportRef} className="bg-white p-4 rounded shadow-sm">
-  <TreeVisualizer tree={tree} updateNode={updateNode} addChild={addChild} />
-</div>
+      {/* Tree Visualizer section */}
+      <div className="flex-1 overflow-auto bg-white p-4 rounded shadow-sm" ref={exportRef}>
+        <TreeVisualizer tree={tree} updateNode={updateNode} addChild={addChild} />
+      </div>
     </div>
   );
 }

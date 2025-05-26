@@ -5,6 +5,8 @@ import { AuthProvider } from './context/AuthContext';
 import App from './App';
 import Dashboard from './pages/Dashboard';
 import ProjectEditor from './pages/ProjectEditor'; // ✅ NEW IMPORT
+import './index.css'; // MUST be imported for Tailwind to apply
+
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <AuthProvider>
