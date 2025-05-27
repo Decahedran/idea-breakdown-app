@@ -6,6 +6,21 @@ import TreeVisualizer from '../components/TreeVisualizer';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
+// 🔧 Organizational Code Generator
+function generateOrgCode(baseCode, index, depth) {
+  const codeArray = baseCode.split('').map(Number);
+
+  // Layer 1 (root) = depth 1 → affects position 0
+  // We now shift by one, skipping the first digit
+  const pos = depth - 2;
+  if (pos >= 0 && pos < 5) {
+    codeArray[pos] = index;
+  }
+
+  return codeArray.join('').padEnd(5, '0');
+}
+
+
 export default function ProjectEditor() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -48,6 +63,7 @@ export default function ProjectEditor() {
     });
   };
 
+  // ✅ Updated: Add child with orgCode logic
   const addChild = (parentId) => {
     setTree(prev => {
       const updated = { ...prev };
@@ -55,12 +71,19 @@ export default function ProjectEditor() {
       if (parent.children.length >= 3 || parent.depth >= 6) return updated;
 
       const newId = crypto.randomUUID();
+      const childIndex = parent.children.length + 1;
+
+      const baseCode = parent.orgCode || '00000';
+      const nextLayer = parent.depth + 1;
+      const newOrgCode = generateOrgCode(baseCode, childIndex, nextLayer);
+
       const newNode = {
         id: newId,
         content: '',
         children: [],
-        depth: parent.depth + 1,
-        parentId
+        depth: nextLayer,
+        parentId,
+        orgCode: newOrgCode
       };
 
       parent.children.push(newId);

@@ -4,6 +4,13 @@ export default function NodeCard({ node, updateNode, addChild, onClick }) {
       className="bg-white border border-gray-300 rounded-lg shadow p-4 w-64 text-sm cursor-pointer hover:ring-2 hover:ring-blue-300 transition"
       onClick={() => onClick?.(node.id)}
     >
+      {/* Display orgCode */}
+      {node.orgCode && (
+        <div className="text-gray-500 text-xs font-mono mb-2 text-right">
+          #{node.orgCode}
+        </div>
+      )}
+
       <input
         type="text"
         value={node.content}
@@ -12,6 +19,7 @@ export default function NodeCard({ node, updateNode, addChild, onClick }) {
         onClick={(e) => e.stopPropagation()} // prevent zoom
         className="w-full border-b p-1 focus:outline-none"
       />
+
       {node.children.length < 3 && node.depth < 6 && (
         <button
           onClick={(e) => {

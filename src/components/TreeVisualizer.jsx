@@ -1,36 +1,55 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import NodeCard from './NodeCard';
 
-function renderNodeWithChildren(node, allNodes, updateNode, addChild, onFocus, limitToOneLevel = false) {
-  const children = node.children.map((id) => allNodes[id]);
+function TreeNode({
+  node,
+  allNodes,
+  updateNode,
+  addChild,
+  onToggleExpand,
+  isExpandedMap,
+  onFocus,
+  depth = 1,
+  isFocusedView = false
+}) {
+  const isExpanded = isExpandedMap[node.id] ?? true;
+  const children = node.children.map(id => allNodes[id]);
 
   return (
-    <div className="flex flex-col items-center" key={node.id}>
-      <NodeCard node={node} updateNode={updateNode} addChild={addChild} onClick={onFocus} />
+    <div className="ml-6 mt-4">
+      <div className="flex items-center gap-2">
+        {children.length > 0 && (
+          <button
+            onClick={() => onToggleExpand(node.id)}
+            className="text-xs px-2 py-0.5 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            {isExpanded ? '−' : '+'}
+          </button>
+        )}
+        <NodeCard
+          node={node}
+          updateNode={updateNode}
+          addChild={addChild}
+          onClick={onFocus}
+        />
+      </div>
 
-      {children.length > 0 && (
-        <div className="flex flex-col items-center mt-4 relative">
-          <div className="w-0.5 h-6 bg-gray-400"></div>
-
-          <div className="relative flex gap-12 pt-6 items-start">
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gray-400 z-0" />
-
-            {children.map((child) => (
-              <div key={child.id} className="flex flex-col items-center relative z-10">
-                <div className="absolute top-[-1.5rem] left-1/2 w-0.5 h-6 bg-gray-400 transform -translate-x-1/2"></div>
-                {limitToOneLevel
-                  ? (
-                      <NodeCard
-                        node={child}
-                        updateNode={updateNode}
-                        addChild={addChild}
-                        onClick={onFocus}
-                      />
-                    )
-                  : renderNodeWithChildren(child, allNodes, updateNode, addChild, onFocus, false)}
-              </div>
-            ))}
-          </div>
+      {isExpanded && children.length > 0 && (!isFocusedView || depth === 1) && (
+        <div className="pl-6 border-l border-gray-300">
+          {children.map(child => (
+            <TreeNode
+              key={child.id}
+              node={child}
+              allNodes={allNodes}
+              updateNode={updateNode}
+              addChild={addChild}
+              onToggleExpand={onToggleExpand}
+              isExpandedMap={isExpandedMap}
+              onFocus={onFocus}
+              depth={depth + 1}
+              isFocusedView={isFocusedView}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -39,8 +58,7 @@ function renderNodeWithChildren(node, allNodes, updateNode, addChild, onFocus, l
 
 export default function TreeVisualizer({ tree, updateNode, addChild }) {
   const [focusId, setFocusId] = useState(null);
-  const [scale, setScale] = useState(1);
-  const containerRef = useRef();
+  const [isExpandedMap, setIsExpandedMap] = useState({});
 
   if (!tree || !tree.root) {
     return <div className="p-4 text-gray-500">Loading tree...</div>;
@@ -49,42 +67,37 @@ export default function TreeVisualizer({ tree, updateNode, addChild }) {
   const allNodes = { [tree.root.id]: tree.root, ...tree.nodes };
   const focusedNode = focusId ? allNodes[focusId] : tree.root;
 
-  // Automatically scale to fit full tree view horizontally
-  useEffect(() => {
-    if (!containerRef.current || focusId) return;
+  const toggleExpand = (nodeId) => {
+    setIsExpandedMap(prev => ({
+      ...prev,
+      [nodeId]: !prev[nodeId],
+    }));
+  };
 
-    const nodeCount = tree.root.children.length || 1;
-    const estimatedTreeWidth = nodeCount * 300 + (nodeCount - 1) * 48;
-    const containerWidth = containerRef.current.offsetWidth;
-
-    const nextScale = Math.min(1, Math.max(0.5, containerWidth / estimatedTreeWidth));
-    setScale(nextScale);
-  }, [tree, focusId]);
+  const resetFocus = () => setFocusId(null);
 
   return (
-    <div className="w-full h-full overflow-auto" ref={containerRef}>
-      <div
-        className={`shrink-0 ${focusId ? '' : 'min-w-[1200px]'}`}
-        style={{ transform: `scale(${scale})`, transformOrigin: 'top', transition: 'transform 0.3s ease-out' }}
-      >
-        {focusId && (
-          <button
-            onClick={() => setFocusId(null)}
-            className="mb-6 px-4 py-2 bg-gray-200 text-sm rounded hover:bg-gray-300"
-          >
-            ← Back to Full Tree
-          </button>
-        )}
+    <div className="w-full h-full overflow-auto px-4 py-2">
+      {focusId && (
+        <button
+          onClick={resetFocus}
+          className="mb-4 px-4 py-2 bg-gray-200 text-sm rounded hover:bg-gray-300"
+        >
+          ← Back to Full Tree
+        </button>
+      )}
 
-        {renderNodeWithChildren(
-          focusedNode,
-          allNodes,
-          updateNode,
-          addChild,
-          setFocusId,
-          focusId !== null // Limit to one level only if zoomed in
-        )}
-      </div>
+      <TreeNode
+        node={focusedNode}
+        allNodes={allNodes}
+        updateNode={updateNode}
+        addChild={addChild}
+        onToggleExpand={toggleExpand}
+        isExpandedMap={isExpandedMap}
+        onFocus={setFocusId}
+        depth={1}
+        isFocusedView={!!focusId}
+      />
     </div>
   );
 }
