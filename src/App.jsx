@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
 import AuthPage from './pages/AuthPage';
-import { useNavigate } from 'react-router-dom';
+import LandingPage from './pages/LandingPage';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 
 export default function App() {
   const { session, user } = useAuth();
@@ -17,5 +18,11 @@ export default function App() {
     return <div className="p-6 text-center">Loading...</div>;
   }
 
-  return <AuthPage />;
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/auth" element={<AuthPage />} />
+      {/* You can add /dashboard and other routes elsewhere in your app */}
+    </Routes>
+  );
 }
