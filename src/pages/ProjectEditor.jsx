@@ -51,17 +51,19 @@ export default function ProjectEditor() {
     if (user) fetchProject();
   }, [id, user]);
 
-  const updateNode = (nodeId, content) => {
-    setTree(prev => {
-      const updated = { ...prev };
-      if (nodeId === updated.root.id) {
-        updated.root.content = content;
-      } else if (updated.nodes[nodeId]) {
-        updated.nodes[nodeId].content = content;
-      }
-      return updated;
-    });
-  };
+  const updateNode = (id, newContent, newColor, newMetadata) => {
+  setTree((prevTree) => {
+    const updated = { ...prevTree.nodes };
+    updated[id] = {
+      ...updated[id],
+      content: newContent,
+      color: newColor || updated[id].color,
+      metadata: newMetadata || updated[id].metadata
+    };
+    return { ...prevTree, nodes: updated };
+  });
+};
+
 
   // ✅ Updated: Add child with orgCode logic
   const addChild = (parentId) => {

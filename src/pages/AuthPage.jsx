@@ -1,22 +1,33 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 export default function AuthPage() {
   const location = useLocation();
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState('');
 
+  // Automatically switch form based on current route
   useEffect(() => {
-    // Automatically switch form based on current route
     if (location.pathname === '/signup') {
       setIsLogin(false);
     } else {
       setIsLogin(true);
     }
   }, [location.pathname]);
+
+  // Redirect to dashboard if session already exists
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/dashboard');
+      }
+    });
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +36,17 @@ export default function AuthPage() {
       ? await supabase.auth.signInWithPassword({ email, password })
       : await supabase.auth.signUp({ email, password });
 
-    if (error) setError(error.message);
+    if (error) {
+      setError(error.message);
+    } else {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        navigate('/dashboard');
+      }
+    }
   };
 
   return (
